@@ -17,10 +17,19 @@ class RawWidgetDj {
     return name + '\n' + parameters.map((e) => '>>>${e.toString()}').join('\n');
   }
 
+  //
+  // Getters
+  //
+
+  String get widgetDjName => name + 'Dj';
+
+  //
+  // Functions
+  //
+
   FileDj? toWidgetDjFileDj() {
     if (parameters.isEmpty) return null;
 
-    var widgetDjName = name + 'Dj';
     var widgetFileName = ReCase(widgetDjName).snakeCase;
 
     var fields = parameters
