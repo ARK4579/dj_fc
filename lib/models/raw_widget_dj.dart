@@ -34,7 +34,10 @@ class RawWidgetDj {
 
     fields.forEach((field) {
       if (djNamesMap.keys.contains(field.dataType)) {
-        var fieldName = field.dataType!.replaceAll('?', '');
+        var fieldName = field.dataType!;
+        fieldName = fieldName.replaceAll('?', '');
+        fieldName = fieldName.replaceAll('List<', '');
+        fieldName = fieldName.replaceAll('>', '');
         var fieldWidgetFileName = ReCase(fieldName + 'Dj').snakeCase;
         _fieldImportDjs.add(
           ImportDj(importStr: fieldWidgetFileName, isFile: true),
