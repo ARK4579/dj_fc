@@ -82,7 +82,7 @@ class RawWidgetDj {
     var lines;
     var dataTypeLine = 'dynamic';
     var mappedDataType = djNamesMap[dataType];
-    if (!dataType.contains('<')) {
+    if (dataType.contains('<')) {
       lines = ['// $dataType Because Generics are not handled yet'];
     } else if (mappedDataType == null) {
       lines = ["// $dataType Because it's Dj Version Not implemented yet"];

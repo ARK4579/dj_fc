@@ -12,11 +12,7 @@ void main() {
 
   var rawWidgets = flutterSdkWidgetProcessor.process();
 
-  var djNamesMap = <String, String>{};
-
-  rawWidgets.forEach((rawWidget) {
-    djNamesMap[rawWidget.name] = rawWidget.widgetDjName;
-  });
+  var djNamesMap = getDjNamesMap(rawWidgets, includeVariants: false);
 
   var outputDir = p.join('..', 'dj_fj', 'lib', 'src');
   var baseDj = BaseDj(
