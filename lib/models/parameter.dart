@@ -28,4 +28,10 @@ class Parameter {
     str += 'rawLine: $rawLine, ';
     return str;
   }
+
+  //
+  // Getters
+  //
+
+  bool get isFieldRequired => (isRequired || isFinal) && !isOptional;
 }
