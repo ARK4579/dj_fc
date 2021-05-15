@@ -12,10 +12,12 @@ void main() {
 
   var rawWidgets = flutterSdkWidgetProcessor.process();
 
+  var djNamesMap = getDjNamesMap(rawWidgets);
+
   var widgetFileDjs = <FileDj>[];
 
   rawWidgets.forEach((rawWidget) {
-    var widgetFileDj = rawWidget.toWidgetDjFileDj();
+    var widgetFileDj = rawWidget.toWidgetDjFileDj(djNamesMap);
     if (widgetFileDj != null) {
       widgetFileDjs.add(widgetFileDj);
     } else {
@@ -34,6 +36,4 @@ void main() {
 
   var baseDjIo = BaseDjIo(baseDjMap: baseDj.toJson());
   baseDjIo.write();
-
-  // print('FieldDj.unKnownDataTypes ${FieldDj.unKnownDataTypes}');
 }

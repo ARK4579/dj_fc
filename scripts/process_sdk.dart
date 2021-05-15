@@ -10,10 +10,12 @@ void main() {
 
   var rawWidgets = flutterSdkWidgetProcessor.process();
 
+  var djNamesMap = getDjNamesMap(rawWidgets);
+
   var widgetFileDjs = <FileDj>[];
 
   rawWidgets.forEach((rawWidget) {
-    var widgetFileDj = rawWidget.toWidgetDjFileDj();
+    var widgetFileDj = rawWidget.toWidgetDjFileDj(djNamesMap);
     if (widgetFileDj != null) {
       widgetFileDjs.add(widgetFileDj);
     } else {
@@ -21,5 +23,5 @@ void main() {
     }
   });
 
-  // print('FieldDj.unKnownDataTypes ${FieldDj.unKnownDataTypes}');
+  print('FieldDj.unKnownDataTypes ${FieldDj.unKnownDataTypes}');
 }

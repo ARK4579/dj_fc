@@ -29,7 +29,10 @@ class RawWidgetDj {
   // Functions
   //
 
-  List<CodePartDj> _fieldImportDjs(List<FieldDj> fields) {
+  List<CodePartDj> _fieldImportDjs(
+    List<FieldDj> fields,
+    Map<String, String> djNamesMap,
+  ) {
     var _fieldImportDjs = <CodePartDj>[];
 
     fields.forEach((field) {
@@ -48,7 +51,7 @@ class RawWidgetDj {
     return _fieldImportDjs;
   }
 
-  FileDj? toWidgetDjFileDj() {
+  FileDj? toWidgetDjFileDj(Map<String, String> djNamesMap) {
     // if (parameters.isEmpty) return null;
 
     var widgetFileName = ReCase(widgetDjName).snakeCase;
@@ -78,7 +81,7 @@ class RawWidgetDj {
 
     var widgetDjCodeFileDj = FileDj(
       name: widgetFileName,
-      codeParts: _fieldImportDjs(fields) +
+      codeParts: _fieldImportDjs(fields, djNamesMap) +
           [
             ImportDj(importStr: 'json_annotation', isPackage: true),
             ImportDj(importStr: 'foundation', isFlutter: true),
