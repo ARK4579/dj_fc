@@ -12,21 +12,9 @@ void main() {
 
   var rawWidgets = flutterSdkWidgetProcessor.process();
 
-  var djNamesMap = <String, String>{
-    'Widget': 'WidgetDj',
-    'List<Widget>': 'List<WidgetDj>',
-    'Widget?': 'WidgetDj?',
-    'List<Widget>?': 'List<WidgetDj>?',
-  };
+  var djNamesMap = getDjNamesMap(rawWidgets);
 
-  rawWidgets.forEach((rawWidget) {
-    djNamesMap[rawWidget.name] = rawWidget.widgetDjName;
-    djNamesMap['${rawWidget.name}?'] = '${rawWidget.widgetDjName}?';
-    djNamesMap['List<${rawWidget.name}>'] = 'List<${rawWidget.widgetDjName}>';
-    djNamesMap['List<${rawWidget.name}>?'] = 'List<${rawWidget.widgetDjName}>?';
-  });
-
-  var outputDir = p.join('..', 'dj', 'lib', 'main', 'djs');
+  var outputDir = p.join('..', 'dj_fj', 'lib', 'src');
   var baseDj = BaseDj(
     path: outputDir,
     node: DirectoryDj(

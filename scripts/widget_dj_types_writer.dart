@@ -18,7 +18,7 @@ void main() {
     djNamesMap[rawWidget.name] = rawWidget.widgetDjName;
   });
 
-  var outputDir = p.join('..', 'dj', 'lib', 'main', 'djs');
+  var outputDir = p.join('..', 'dj_fj', 'lib', 'src');
   var baseDj = BaseDj(
     path: outputDir,
     node: DirectoryDj(

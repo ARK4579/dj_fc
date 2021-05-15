@@ -25,7 +25,7 @@ void main() {
     }
   });
 
-  var outputDir = p.join('..', 'dj', 'lib', 'main', 'djs', 'widget_djs');
+  var outputDir = p.join('..', 'dj_fj', 'lib', 'src', 'widget_djs');
   var baseDj = BaseDj(
     path: outputDir,
     node: DirectoryDj(
