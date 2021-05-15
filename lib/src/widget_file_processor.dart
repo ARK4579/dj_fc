@@ -1,7 +1,5 @@
 import 'dart:io';
 
-import 'package:recase/recase.dart';
-
 import '../models/models.dart';
 import '../utils/utils.dart';
 
@@ -12,12 +10,50 @@ class WidgetFileProcessor {
     required this.file,
   });
 
+  String? _isConstructorLine(String line) {
+    if (CommentLineChecker(line: line).check()) {
+      // Not a constructor line because it's a comment line
+      return null;
+    }
+    var regEx1Str = 'class .* {';
+    var regEx1 = RegExp(regEx1Str);
+
+    if (regEx1.hasMatch(line)) {
+      var match = regEx1.firstMatch(line);
+      if (match != null) {
+        var matchString = line;
+        if (matchString != null) {
+          matchString = matchString.split('abstract ').last;
+          if (matchString.startsWith('class')) {
+            var className = matchString
+                .split('class ')
+                .last
+                .split(' {')
+                .first
+                .split(' extends ')
+                .first
+                .split(' with ')
+                .first
+                .split(' implements ')
+                .first
+                .split('<')
+                .first;
+            if (className == '{' || className.contains(' ')) {
+              print(
+                  "'$className' => '${file.absolute.toString()}' @ $matchString\t\n'$line'");
+            }
+            if (className.startsWith('_')) return null;
+            return className;
+          }
+        }
+      }
+    }
+  }
+
   List<RawWidgetDj> process() {
     var rawWidgetDjs = <RawWidgetDj>[];
 
     var itemPath = file.uri.toFilePath();
-    var widgetNameSC = itemPath.split('\\').last.split('.dart').first;
-    var widgetNamePC = ReCase(widgetNameSC).pascalCase;
 
     var fileHandler = File(itemPath);
 
@@ -28,19 +64,29 @@ class WidgetFileProcessor {
     // 0 => Not Found Yet
     // 1 => Constructor comments running
     // 2 => Constructor
-    // 2 => After Constructor
+    // 3 => After Constructor
     var constructorFound = 0;
+    String? constructorName;
     fileLines.forEach((line) {
-      if (constructorFound == 0 &&
-          (line.contains('class $widgetNamePC extends ') ||
-              line.contains('class $widgetNamePC<T> extends ') ||
-              line.contains(
-                  'class $widgetNamePC<T extends Object?> extends '))) {
+      var _constructorName = _isConstructorLine(line);
+      if (constructorFound == 0 && _constructorName != null) {
+        constructorName = _constructorName;
         constructorFound = 1;
       } else if (constructorFound == 1 && !line.startsWith('  ///')) {
         constructorFound = 2;
       } else if (constructorFound == 2 && line.isEmpty) {
-        constructorFound = 3;
+        constructorFound = 0;
+
+        rawWidgetDjs.add(
+          processWidgetParams(
+            constructorName!,
+            parameterLines,
+            itemPath,
+          ),
+        );
+
+        parameterLines = [];
+        constructorName = null;
       }
 
       if (constructorFound == 2) {
@@ -48,12 +94,11 @@ class WidgetFileProcessor {
       }
     });
 
-    rawWidgetDjs.add(processWidgetParams(widgetNamePC, parameterLines));
-
     return rawWidgetDjs;
   }
 
-  RawWidgetDj processWidgetParams(String name, List<String> lines) {
+  RawWidgetDj processWidgetParams(
+      String name, List<String> lines, String filePath) {
     var parameterLines = <String>[];
 
     var gotAllParameters = false;
@@ -75,7 +120,11 @@ class WidgetFileProcessor {
 
     var parameters = processParameterLines(parameterLines);
 
-    var rawWidgetDj = RawWidgetDj(parameters: parameters, name: name);
+    var rawWidgetDj = RawWidgetDj(
+      parameters: parameters,
+      name: name,
+      originFilePath: filePath,
+    );
 
     return rawWidgetDj;
   }
@@ -127,6 +176,11 @@ class WidgetFileProcessor {
             isRequired: isRequired,
             rawLine: parameterLine,
           );
+
+          // print('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>');
+          // print('$parameterLine');
+          // print('$parameter');
+          // print('');
 
           parameters.add(parameter);
         }

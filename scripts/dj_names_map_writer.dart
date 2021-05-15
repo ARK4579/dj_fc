@@ -17,8 +17,6 @@ void main() {
     'List<Widget>': 'List<WidgetDj>',
     'Widget?': 'WidgetDj?',
     'List<Widget>?': 'List<WidgetDj>?',
-    'Key': 'dynamic',
-    'Key?': 'dynamic',
   };
 
   rawWidgets.forEach((rawWidget) {

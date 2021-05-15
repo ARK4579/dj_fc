@@ -34,35 +34,62 @@ class FlutterSdkWidgetProcessor {
   }
 
   List<RawWidgetDj> process() {
-    var flutterWidgetLocation = p.join(
-      sdkLocation,
-      'packages',
-      'flutter',
-      'lib',
-      'src',
-      'widgets',
-    );
-
-    var flutterRawWidgets = _processWidgetDirectory(flutterWidgetLocation);
-
-    print('Got ${flutterRawWidgets.length} Flutter Raw Widgets');
-
-    var flutterRenderingWidgetLocation = p.join(
-      sdkLocation,
-      'packages',
-      'flutter',
-      'lib',
-      'src',
+    var widgetFolders = [
+      'animation',
+      'cupertino',
+      'foundation',
+      'gestures',
+      'material',
+      'painting',
+      'physics',
       'rendering',
+      'scheduler',
+      'semantics',
+      'services',
+      'widgets',
+    ];
+
+    var baseFolder = p.join(
+      sdkLocation,
+      'packages',
+      'flutter',
+      'lib',
+      'src',
     );
 
-    var flutterRenderingRawWidgets =
-        _processWidgetDirectory(flutterRenderingWidgetLocation);
+    // For Extracting Dart Widgets!
+    // var widgetFolders = [
+    //   'core',
+    // ];
+    // var baseFolder = p.join(
+    //   sdkLocation,
+    //   'bin',
+    //   'cache',
+    //   'pkg',
+    //   'sky_engine',
+    //   'lib',
+    // );
+
+    var allRawWidgets = <RawWidgetDj>[];
+
+    widgetFolders.forEach((widgetFolder) {
+      var flutterWidgetLocation = p.join(
+        baseFolder,
+        widgetFolder,
+      );
+
+      var folderRawWidgets = _processWidgetDirectory(flutterWidgetLocation);
+
+      print(
+        'Got ${folderRawWidgets.length} Raw Widgets from $widgetFolder widget folder',
+      );
+
+      allRawWidgets += folderRawWidgets;
+    });
 
     print(
-        'Got ${flutterRenderingRawWidgets.length} Flutter Rendering Raw Widgets');
-
-    var allRawWidgets = flutterRawWidgets + flutterRenderingRawWidgets;
+      'Got a Total of ${allRawWidgets.length} Raw Widgets from $baseFolder folder',
+    );
 
     return allRawWidgets;
   }
