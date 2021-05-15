@@ -66,7 +66,7 @@ class RawWidgetDj {
 
     fields.add(
       FieldDj(
-        name: 'type',
+        name: 'baseWidgetDjType',
         dataType: 'WidgetDjTypes',
         defaultValue: 'WidgetDjTypes.$name',
         superOnly: true,

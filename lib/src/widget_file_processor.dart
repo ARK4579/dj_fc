@@ -10,6 +10,9 @@ class WidgetFileProcessor {
     required this.file,
   });
 
+  static String currentFileName = '';
+  static String currentConstructorName = '';
+
   String? _isConstructorLine(String line) {
     if (CommentLineChecker(line: line).check()) {
       // Not a constructor line because it's a comment line
@@ -55,6 +58,8 @@ class WidgetFileProcessor {
 
     var itemPath = file.uri.toFilePath();
 
+    currentFileName = itemPath;
+
     var fileHandler = File(itemPath);
 
     var fileLines = fileHandler.readAsLinesSync().toList();
@@ -67,14 +72,25 @@ class WidgetFileProcessor {
     // 3 => After Constructor
     var constructorFound = 0;
     String? constructorName;
+    var constructorLess = false;
     fileLines.forEach((line) {
+      var parsedLine = WhiteSpaceRemover(line: line).removeFromStart();
       var _constructorName = _isConstructorLine(line);
       if (constructorFound == 0 && _constructorName != null) {
         constructorName = _constructorName;
         constructorFound = 1;
-      } else if (constructorFound == 1 && !line.startsWith('  ///')) {
+        constructorLess = false;
+        currentConstructorName = constructorName!;
+      } else if (constructorFound == 1 && !parsedLine.startsWith('///')) {
         constructorFound = 2;
-      } else if (constructorFound == 2 && line.isEmpty) {
+        constructorLess = !line.contains(constructorName!) ||
+            line.contains('super') ||
+            (line.endsWith('{') && line.contains(')'));
+      } else if (constructorFound == 2 &&
+          (line.isEmpty ||
+              (line.endsWith('{') && line.contains(')')) ||
+              (line.contains('=') && line.contains(')')) ||
+              (line.contains('{') && line.endsWith('})')))) {
         constructorFound = 0;
 
         rawWidgetDjs.add(
@@ -89,7 +105,7 @@ class WidgetFileProcessor {
         constructorName = null;
       }
 
-      if (constructorFound == 2) {
+      if (constructorFound == 2 && !constructorLess) {
         parameterLines.add(line);
       }
     });
@@ -107,9 +123,9 @@ class WidgetFileProcessor {
           !gotAllParameters &&
           line.isNotEmpty &&
           !CommentLineChecker(line: line).check()) {
-        if (line.contains(') :') ||
+        if ((line.contains(')') && line.contains(':')) ||
             line.contains(');') ||
-            line.contains(': assert')) {
+            (line.contains(':') && line.contains('assert'))) {
           gotAllParameters = true;
         }
         if (!gotAllParameters) {
@@ -133,45 +149,114 @@ class WidgetFileProcessor {
     var parameters = <Parameter>[];
 
     var isOptional = false;
-    var skipLine = false;
+    var skipLines = 0;
     parameterLines.forEach((parameterLine) {
-      var _line = parameterLine.split('    ').last;
+      // Use this when debugging parsing of a particular line.
+      var debuggingThisLine = false;
+      // if ((skipLines == 0) && !parameterLine.contains('(')) {
+      //   print('');
+      //   print('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>');
+      //   print('$currentConstructorName @ $currentFileName');
+      //   print('$parameterLine');
+      //   debuggingThisLine = true;
+      // }
 
-      if (_line.startsWith('@') || _line.endsWith('(')) {
-        skipLine = true;
+      // var line = parameterLine.split('    ').last;
+      var line = WhiteSpaceRemover(line: parameterLine).removeFromStart();
+
+      if (debuggingThisLine) {
+        print('1. $line');
       }
 
-      if (!skipLine) {
-        if (_line.endsWith(',') || _line.endsWith(', {')) {
-          var endingWith = _line.endsWith(',') ? ',' : ', {';
-          var __line = _line.split(endingWith).first;
+      // Indicates if we should just this line ?
+      var skipOnlyThisLine = false;
+
+      // This means that this is a modifier and not a field
+      // so we should just skip it
+      if (line.startsWith('@')) {
+        skipOnlyThisLine = true;
+      }
+
+      // This means that this is start of a Multi-Line object initialization
+      // so we should start skipping lines until this initialization ends.
+      if (line.endsWith('(')) {
+        skipLines += 1;
+      }
+
+      if ((skipLines == 0) || skipOnlyThisLine) {
+        if (line.endsWith(',') || line.endsWith(', {')) {
+          var _isOptional = isOptional;
+          if (line.endsWith(', {')) {
+            // This means that all fields after this will be optional to specify
+            isOptional = true;
+            line = line.split(', {').first;
+          } else {
+            line = line.substring(0, line.length - 1);
+          }
+
+          if (debuggingThisLine) {
+            print('1.5. $line [$isOptional]');
+          }
+
+          if (debuggingThisLine) {
+            print('2. $line');
+          }
 
           var defaultValue;
 
-          var __lineSplit = __line.split(' = ');
-          if (__lineSplit.length == 2) {
-            defaultValue = __lineSplit.last;
-            __line = __lineSplit.first;
+          var lineParts = line.split('=');
+          if (lineParts.length == 2) {
+            defaultValue =
+                WhiteSpaceRemover(line: lineParts.last).removeFromStart();
+            line = WhiteSpaceRemover(line: lineParts.first).removeFromEnd();
           }
 
-          var isRequired = _line.startsWith('required');
-          __line = __line.split('required ').last;
+          if (debuggingThisLine) {
+            print('3. $line [$defaultValue]');
+          }
 
-          var isFinal = _line.contains('this.');
-          __line = __line.replaceAll('this.', '');
+          // Extract 'required'
+          var isRequired = line.startsWith('required');
+          line = line.split('required ').last;
 
-          var type;
-          if (__line.split(' ').length == 2) {
-            __lineSplit = __line.split(' ');
-            type = __lineSplit.first;
-            __line = __lineSplit.last;
+          if (debuggingThisLine) {
+            print('4. $line [$isRequired]');
+          }
+
+          // Determine if it's final type field
+          var isFinal = line.contains('this.');
+          line = line.replaceAll('this.', '');
+
+          if (debuggingThisLine) {
+            print('5. $line [$isFinal]');
+          }
+
+          lineParts = line.split(' ');
+
+          late String name;
+          late String? type;
+          if (lineParts.length > 1) {
+            name = line.split(' ').last;
+            type = line.split(' $name').first;
+          } else {
+            name = line;
+            type = null;
+          }
+          // if (line.split(' ').length == 2) {
+          //   lineParts = line.split(' ');
+          //   type = lineParts.first;
+          //   line = lineParts.last;
+          // }
+
+          if (debuggingThisLine) {
+            print('6. [$type] [$name]');
           }
 
           var parameter = Parameter(
             isFinal: isFinal,
-            name: __line,
+            name: name,
             type: type,
-            isOptional: isOptional,
+            isOptional: _isOptional,
             defaultValue: defaultValue,
             isRequired: isRequired,
             rawLine: parameterLine,
@@ -184,18 +269,15 @@ class WidgetFileProcessor {
 
           parameters.add(parameter);
         }
-
-        if (_line.endsWith(', {')) {
-          isOptional = true;
-        }
       }
 
-      if (skipLine) {
-        if (_line == '},') {
-          skipLine = false;
+      // detects last of skipping lines.
+      if (skipLines > 0) {
+        if (line == '},') {
+          skipLines -= 1;
         }
-        if (_line == '),') {
-          skipLine = false;
+        if (line == '),') {
+          skipLines -= 1;
         }
       }
     });
