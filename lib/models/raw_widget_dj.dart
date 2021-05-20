@@ -102,6 +102,55 @@ class RawWidgetDj {
     return _SafetyDataType(dataType: dataTypeLine, description: lines);
   }
 
+  CodePartDj getToCode(List<FieldDj> fields) {
+    var bodyCodeLines = <String>["codeLines.add('$name(');"];
+    fields.forEach((field) {
+      if (field.name != 'baseWidgetDjType' &&
+          !(field.name?.startsWith('_') ?? false)) {
+        bodyCodeLines.add('if(${field.name}!=null) {');
+        bodyCodeLines.add("codeLines.add('${field.name}:\$${field.name},');");
+        bodyCodeLines.add('}');
+      }
+    });
+    bodyCodeLines.add("codeLines.add(')');");
+
+    List<CodePartDj>? bodyCodeParts = [
+      VariableDeclarationDj(
+        dataType: VariableType.Var,
+        name: 'codeLines',
+        initialValue: '<String>[]',
+      ),
+    ];
+    bodyCodeParts += bodyCodeLines.map((e) => SingleLineDj(line: e)).toList();
+    bodyCodeParts.add(
+      ReturnDj(
+        returnStr: 'codeLines',
+      ),
+    );
+
+    CodePartDj codePartDj = FunctionDj(
+      annotations: ['override'],
+      outputType: VariableType.ListString,
+      name: 'toCode',
+      bodyCodeParts: bodyCodeParts,
+    );
+
+    return codePartDj;
+  }
+
+  CodePartDj getToString() {
+    CodePartDj codePartDj = FunctionDj(
+      annotations: ['override'],
+      outputType: VariableType.String,
+      name: 'toString',
+      bodyCodeParts: [
+        ReturnDj(returnStr: "toCode().join('')"),
+      ],
+    );
+
+    return codePartDj;
+  }
+
   FileDj? toWidgetDjFileDj(Map<String, String> djNamesMap) {
     var widgetFileName = ReCase(widgetDjName).snakeCase;
 
@@ -142,12 +191,15 @@ class RawWidgetDj {
             ImportDj(importStr: widgetFileName, isPart: true),
             EmptyLineDj(),
             ClassDj(
-              name: widgetDjName,
-              isExtends: true,
-              baseName: 'BaseWidgetDj',
-              fields: fields,
-              jsonSerializable: true,
-            ),
+                name: widgetDjName,
+                isExtends: true,
+                baseName: 'BaseWidgetDj',
+                fields: fields,
+                jsonSerializable: true,
+                functions: [
+                  getToCode(fields),
+                  getToString(),
+                ]),
           ],
     );
 
