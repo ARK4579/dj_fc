@@ -138,7 +138,9 @@ class RawWidgetDj {
             ImportDj(importStr: 'widgets', isFlutter: true),
             ImportDj(importStr: '../widget_dj_types', isFile: true),
             ImportDj(importStr: '../base_widget_dj', isFile: true),
+            EmptyLineDj(),
             ImportDj(importStr: widgetFileName, isPart: true),
+            EmptyLineDj(),
             ClassDj(
               name: widgetDjName,
               isExtends: true,
