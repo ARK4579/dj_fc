@@ -16,5 +16,10 @@ Map<String, String> getDjNamesMap(
     }
   });
 
+  djNamesMap['Widget'] = 'BaseWidgetDj';
+  djNamesMap['Widget?'] = 'BaseWidgetDj?';
+  djNamesMap['List<Widget>'] = 'List<BaseWidgetDj>';
+  djNamesMap['List<Widget>?'] = 'List<BaseWidgetDj>?';
+
   return djNamesMap;
 }

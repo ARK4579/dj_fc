@@ -4,6 +4,11 @@ class WhiteSpaceRemover {
     required this.line,
   });
 
+  String remove() {
+    removeFromStart();
+    return removeFromEnd();
+  }
+
   String removeFromStart() {
     var removedLine = '';
 

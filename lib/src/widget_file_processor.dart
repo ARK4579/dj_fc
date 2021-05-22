@@ -3,6 +3,13 @@ import 'dart:io';
 import '../models/models.dart';
 import '../utils/utils.dart';
 
+//... If this value is set this means that we will be generating dj version of
+//... only this widget
+// const String? KEEP_ONLY_WIDGET = 'TextStyle';
+const String? KEEP_ONLY_WIDGET = null;
+
+int fileDebugLvl = KEEP_ONLY_WIDGET == null ? 0 : 6;
+
 class WidgetFileProcessor {
   final FileSystemEntity file;
 
@@ -25,29 +32,27 @@ class WidgetFileProcessor {
       var match = regEx1.firstMatch(line);
       if (match != null) {
         var matchString = line;
-        if (matchString != null) {
-          matchString = matchString.split('abstract ').last;
-          if (matchString.startsWith('class')) {
-            var className = matchString
-                .split('class ')
-                .last
-                .split(' {')
-                .first
-                .split(' extends ')
-                .first
-                .split(' with ')
-                .first
-                .split(' implements ')
-                .first
-                .split('<')
-                .first;
-            if (className == '{' || className.contains(' ')) {
-              print(
-                  "'$className' => '${file.absolute.toString()}' @ $matchString\t\n'$line'");
-            }
-            if (className.startsWith('_')) return null;
-            return className;
+        matchString = matchString.split('abstract ').last;
+        if (matchString.startsWith('class')) {
+          var className = matchString
+              .split('class ')
+              .last
+              .split(' {')
+              .first
+              .split(' extends ')
+              .first
+              .split(' with ')
+              .first
+              .split(' implements ')
+              .first
+              .split('<')
+              .first;
+          if (className == '{' || className.contains(' ')) {
+            print(
+                "'$className' => '${file.absolute.toString()}' @ $matchString\t\n'$line'");
           }
+          if (className.startsWith('_')) return null;
+          return className;
         }
       }
     }
@@ -81,11 +86,90 @@ class WidgetFileProcessor {
         constructorFound = 1;
         constructorLess = false;
         currentConstructorName = constructorName!;
+
+        if (KEEP_ONLY_WIDGET != null && constructorName != KEEP_ONLY_WIDGET) {
+          constructorFound = 0;
+        }
       } else if (constructorFound == 1 && !parsedLine.startsWith('///')) {
         constructorFound = 2;
         constructorLess = !line.contains(constructorName!) ||
             line.contains('super') ||
             (line.endsWith('{') && line.contains(')'));
+
+        // Check if this is a single line constructor
+        if (line.contains(constructorName! + '(') &&
+            line.contains(')') &&
+            !line.contains('()') &&
+            !line.contains('=')) {
+          if (fileDebugLvl > 5) {
+            print("Parsing single line constructor: '$line'");
+          }
+
+          var singleConstructorLine = line;
+          if (singleConstructorLine.contains(':')) {
+            singleConstructorLine = singleConstructorLine.split(':').first;
+          }
+
+          var regExStr = 'Map<.*>';
+          var regEx = RegExp(regExStr);
+
+          if (regEx.hasMatch(singleConstructorLine)) {
+            if (fileDebugLvl > 5) {
+              print('Map Warning!');
+            }
+            var match = regEx.firstMatch(singleConstructorLine);
+            if (match != null) {
+              var match_0 = match.group(0);
+              if (match_0 != null) {
+                if (fileDebugLvl > 5) {
+                  print("Map is: '$match_0'");
+                }
+                singleConstructorLine =
+                    singleConstructorLine.replaceAll(match_0, 'dynamic');
+              }
+            }
+          }
+
+          // get all the parameters
+          var paramsLinePart = singleConstructorLine
+              .split(constructorName! + '(')
+              .last
+              .split(')')
+              .first;
+          paramsLinePart =
+              paramsLinePart.replaceAll('{', '').replaceAll('}', '');
+
+          if (fileDebugLvl > 5) {
+            print('parsedLine $paramsLinePart');
+          }
+
+          var params = paramsLinePart
+              .split(',')
+              .map((e) => WhiteSpaceRemover(line: e).remove() + ',')
+              .toList();
+
+          // parse them
+          var parsedParameters = processParameterLines(params);
+
+          if (fileDebugLvl > 5) {
+            print('params: $params; parsed: ${parsedParameters.length}');
+          }
+
+          // get widget
+          var rawWidgetDj = RawWidgetDj(
+            parameters: parsedParameters,
+            name: constructorName!,
+            originFilePath: itemPath,
+          );
+
+          rawWidgetDjs.add(rawWidgetDj);
+
+          // and let the world know that we have got constructor
+          constructorFound = 0;
+
+          parameterLines = [];
+          constructorName = null;
+        }
       } else if (constructorFound == 2 &&
           (line.isEmpty ||
               (line.endsWith('{') && line.contains(')')) ||
@@ -106,6 +190,11 @@ class WidgetFileProcessor {
       }
 
       if (constructorFound == 2 && !constructorLess) {
+        if (fileDebugLvl > 5 &&
+            KEEP_ONLY_WIDGET != null &&
+            KEEP_ONLY_WIDGET == constructorName) {
+          print("line: '$line'");
+        }
         parameterLines.add(line);
       }
     });
@@ -114,7 +203,11 @@ class WidgetFileProcessor {
   }
 
   RawWidgetDj processWidgetParams(
-      String name, List<String> lines, String filePath) {
+    String name,
+    List<String> lines,
+    String filePath, {
+    int debugLvl = 0,
+  }) {
     var parameterLines = <String>[];
 
     var gotAllParameters = false;
@@ -152,7 +245,7 @@ class WidgetFileProcessor {
     var skipLines = 0;
     parameterLines.forEach((parameterLine) {
       // Use this when debugging parsing of a particular line.
-      var debuggingThisLine = false;
+      var debuggingThisLine = fileDebugLvl > 0;
       // if ((skipLines == 0) && !parameterLine.contains('(')) {
       //   print('');
       //   print('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>');
@@ -229,6 +322,20 @@ class WidgetFileProcessor {
 
           if (debuggingThisLine) {
             print('5. $line [$isFinal]');
+          }
+
+          if (line.contains('[') && line.contains(']')) {
+            var lineBefore = line;
+            line = line.replaceAll('[', '').replaceAll(']', '');
+            line = WhiteSpaceRemover(line: line).remove();
+
+            _isOptional = true;
+            isRequired = false;
+            isFinal = true;
+
+            if (debuggingThisLine) {
+              print('5.5. $lineBefore => $line');
+            }
           }
 
           lineParts = line.split(' ');

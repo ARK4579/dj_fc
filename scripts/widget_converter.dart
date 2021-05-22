@@ -25,6 +25,13 @@ void main() {
     }
   });
 
+  var exportFileDj = FileDj(
+    name: 'auto_widget_djs',
+    codeParts: widgetFileDjs.map((e) => ExportDj(exportStr: e.name)).toList(),
+  );
+
+  widgetFileDjs.add(exportFileDj);
+
   var outputDir = p.join('..', 'dj_fj', 'lib', 'src', 'widget_djs');
   var baseDj = BaseDj(
     path: outputDir,

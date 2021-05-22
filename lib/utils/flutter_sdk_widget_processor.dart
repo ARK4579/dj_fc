@@ -4,6 +4,11 @@ import 'package:path/path.dart' as p;
 
 import 'package:dj_fc/dj_fc.dart';
 
+//... If this value is set this means we are in debug mode and widgets from only
+//... this file will be parsed
+// const String? PARSE_ONLY_FILE = 'basic.dart';
+const String? PARSE_ONLY_FILE = null;
+
 class FlutterSdkWidgetProcessor {
   final String sdkLocation;
 
@@ -24,8 +29,13 @@ class FlutterSdkWidgetProcessor {
       var itemPath = item.uri.toFilePath();
       if (itemPath.endsWith('.dart')) {
         if (item.toString().startsWith('File')) {
-          var rawWidgets = WidgetFileProcessor(file: item).process();
-          directoryRawWidgets += rawWidgets;
+          //... if PARSE_ONLY_FILE is null then all files will be parsed
+          //... else only PARSE_ONLY_FILE will be parsed
+          var parseFile = itemPath.endsWith(PARSE_ONLY_FILE ?? '.dart');
+          if (parseFile) {
+            var rawWidgets = WidgetFileProcessor(file: item).process();
+            directoryRawWidgets += rawWidgets;
+          }
         }
       }
     });

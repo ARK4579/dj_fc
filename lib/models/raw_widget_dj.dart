@@ -182,9 +182,9 @@ class RawWidgetDj {
       name: widgetFileName,
       codeParts: _fieldImportDjs(fields, djNamesMap) +
           [
+            EmptyLineDj(),
             ImportDj(importStr: 'json_annotation', isPackage: true),
-            ImportDj(importStr: 'foundation', isFlutter: true),
-            ImportDj(importStr: 'widgets', isFlutter: true),
+            EmptyLineDj(),
             ImportDj(importStr: '../widget_dj_types', isFile: true),
             ImportDj(importStr: '../base_widget_dj', isFile: true),
             EmptyLineDj(),
