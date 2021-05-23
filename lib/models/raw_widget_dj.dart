@@ -69,37 +69,42 @@ class RawWidgetDj {
     var dataType = parameter.type;
     if (dataType == null) return _SafetyDataType(dataType: null);
 
-    var hasDefaultValue = parameter.defaultValue != null;
+    return _SafetyDataType(dataType: 'dynamic', description: [
+      "// Setting data type of this field to be 'dynamic' instead of",
+      "// '$dataType' for now.",
+    ]);
 
-    if (dataType != 'dynamic' &&
-        !djNamesMap.keys.contains(dataType) &&
-        !dataType.contains('<')) {
-      if (!unKnownDataTypes.contains(dataType)) {
-        unKnownDataTypes.add(dataType);
-      }
-    }
+    // var hasDefaultValue = parameter.defaultValue != null;
 
-    var lines;
-    var dataTypeLine = 'dynamic';
-    var mappedDataType = djNamesMap[dataType];
-    if (dataType.contains('<')) {
-      lines = ['// $dataType Because Generics are not handled yet'];
-    } else if (mappedDataType == null) {
-      lines = ["// $dataType Because it's Dj Version Not implemented yet"];
-    } else if (hasDefaultValue) {
-      lines = ['// $dataType because Non-Dj default value is provided.'];
-    } else if (!dataType.endsWith('?') && !parameter.isFieldRequired) {
-      lines = ["// $dataType because for default value couldn't parsed."];
-    } else {
-      dataTypeLine = mappedDataType;
-    }
+    // if (dataType != 'dynamic' &&
+    //     !djNamesMap.keys.contains(dataType) &&
+    //     !dataType.contains('<')) {
+    //   if (!unKnownDataTypes.contains(dataType)) {
+    //     unKnownDataTypes.add(dataType);
+    //   }
+    // }
 
-    if (lines != null) {
-      var r = "// Setting data type of this field to be 'dynamic' instead of";
-      lines = [r] + lines;
-    }
+    // var lines;
+    // var dataTypeLine = 'dynamic';
+    // var mappedDataType = djNamesMap[dataType];
+    // if (dataType.contains('<')) {
+    //   lines = ['// $dataType Because Generics are not handled yet'];
+    // } else if (mappedDataType == null) {
+    //   lines = ["// $dataType Because it's Dj Version Not implemented yet"];
+    // } else if (hasDefaultValue) {
+    //   lines = ['// $dataType because Non-Dj default value is provided.'];
+    // } else if (!dataType.endsWith('?') && !parameter.isFieldRequired) {
+    //   lines = ["// $dataType because for default value couldn't parsed."];
+    // } else {
+    //   dataTypeLine = mappedDataType;
+    // }
 
-    return _SafetyDataType(dataType: dataTypeLine, description: lines);
+    // if (lines != null) {
+    //   var r = "// Setting data type of this field to be 'dynamic' instead of";
+    //   lines = [r] + lines;
+    // }
+
+    // return _SafetyDataType(dataType: dataTypeLine, description: lines);
   }
 
   CodePartDj getToCode(List<FieldDj> fields) {
@@ -172,35 +177,38 @@ class RawWidgetDj {
     fields.add(
       FieldDj(
         name: 'baseWidgetDjType',
-        dataType: 'WidgetDjTypes',
-        defaultValue: 'WidgetDjTypes.$name',
+        dataType: 'String',
+        defaultValue: "'$name'",
         superOnly: true,
       ),
     );
 
+    var codeParts = <CodePartDj>[
+      ImportDj(importStr: 'dj', isPackage: true),
+      ImportDj(importStr: 'json_annotation', isPackage: true),
+      EmptyLineDj(),
+      ImportDj(importStr: widgetFileName, isPart: true),
+      EmptyLineDj(),
+      ClassDj(
+        name: widgetDjName,
+        isExtends: true,
+        baseName: 'BaseWidgetDj',
+        fields: fields,
+        jsonSerializable: true,
+        functions: [
+          getToCode(fields),
+          getToString(),
+        ],
+      ),
+      EmptyLineDj(),
+    ];
+
+    // since we are setting all types to dynamic, we don't have to import
+    // codeParts += _fieldImportDjs(fields, djNamesMap);
+
     var widgetDjCodeFileDj = FileDj(
       name: widgetFileName,
-      codeParts: _fieldImportDjs(fields, djNamesMap) +
-          [
-            EmptyLineDj(),
-            ImportDj(importStr: 'json_annotation', isPackage: true),
-            EmptyLineDj(),
-            ImportDj(importStr: '../widget_dj_types', isFile: true),
-            ImportDj(importStr: '../base_widget_dj', isFile: true),
-            EmptyLineDj(),
-            ImportDj(importStr: widgetFileName, isPart: true),
-            EmptyLineDj(),
-            ClassDj(
-                name: widgetDjName,
-                isExtends: true,
-                baseName: 'BaseWidgetDj',
-                fields: fields,
-                jsonSerializable: true,
-                functions: [
-                  getToCode(fields),
-                  getToString(),
-                ]),
-          ],
+      codeParts: codeParts,
     );
 
     return widgetDjCodeFileDj;

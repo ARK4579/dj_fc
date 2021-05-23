@@ -11,12 +11,6 @@ To update djNameMap:
 flutter pub run .\scripts\dj_names_map_writer.dart
 ```
 
-To update WidgetDjTypes:
-
-```ps1
-flutter pub run .\scripts\widget_dj_types_writer.dart
-```
-
 And then to generate all Dj Widgets:
 
 ```ps1
