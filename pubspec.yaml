@@ -12,6 +12,7 @@ dependencies:
   flutter:
     sdk: flutter
   recase: ^4.0.0
+  args: ^2.1.0
   # dj_io: 0.0.4
   dj_io:
     path: ../dj_io

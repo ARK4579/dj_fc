@@ -44,6 +44,8 @@ class FlutterSdkWidgetProcessor {
   }
 
   List<RawWidgetDj> process() {
+    print('Processing Flutter SDK at $sdkLocation...');
+
     var widgetFolders = [
       'animation',
       'cupertino',

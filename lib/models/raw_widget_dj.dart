@@ -113,7 +113,12 @@ class RawWidgetDj {
       if (field.name != 'baseWidgetDjType' &&
           !(field.name?.startsWith('_') ?? false)) {
         bodyCodeLines.add('if(${field.name}!=null) {');
-        bodyCodeLines.add("codeLines.add('${field.name}:\$${field.name},');");
+        var fieldValue = '\${dynamicParameterParser(${field.name})}';
+        if (field.isOptional ?? false) {
+          bodyCodeLines.add("codeLines.add('${field.name}:$fieldValue,');");
+        } else {
+          bodyCodeLines.add("codeLines.add('$fieldValue,');");
+        }
         bodyCodeLines.add('}');
       }
     });
