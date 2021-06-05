@@ -5,7 +5,7 @@ import '../utils/utils.dart';
 
 //... If this value is set this means that we will be generating dj version of
 //... only this widget
-// const String? KEEP_ONLY_WIDGET = 'TextStyle';
+// const String? KEEP_ONLY_WIDGET = 'Text';
 const String? KEEP_ONLY_WIDGET = null;
 
 int fileDebugLvl = KEEP_ONLY_WIDGET == null ? 0 : 6;
@@ -78,10 +78,12 @@ class WidgetFileProcessor {
     var constructorFound = 0;
     String? constructorName;
     var constructorLess = false;
+    var initialIsOptional = false;
     fileLines.forEach((line) {
       var parsedLine = WhiteSpaceRemover(line: line).removeFromStart();
       var _constructorName = _isConstructorLine(line);
       if (constructorFound == 0 && _constructorName != null) {
+        initialIsOptional = false;
         constructorName = _constructorName;
         constructorFound = 1;
         constructorLess = false;
@@ -95,6 +97,10 @@ class WidgetFileProcessor {
         constructorLess = !line.contains(constructorName!) ||
             line.contains('super') ||
             (line.endsWith('{') && line.contains(')'));
+
+        if (line.endsWith('({')) {
+          initialIsOptional = true;
+        }
 
         // Check if this is a single line constructor
         if (line.contains(constructorName! + '(') &&
@@ -149,7 +155,10 @@ class WidgetFileProcessor {
               .toList();
 
           // parse them
-          var parsedParameters = processParameterLines(params);
+          var parsedParameters = processParameterLines(
+            params,
+            intialIsOptional: true,
+          );
 
           if (fileDebugLvl > 5) {
             print('params: $params; parsed: ${parsedParameters.length}');
@@ -182,6 +191,7 @@ class WidgetFileProcessor {
             constructorName!,
             parameterLines,
             itemPath,
+            initialIsOptional: initialIsOptional,
           ),
         );
 
@@ -207,6 +217,7 @@ class WidgetFileProcessor {
     List<String> lines,
     String filePath, {
     int debugLvl = 0,
+    bool initialIsOptional = false,
   }) {
     var parameterLines = <String>[];
 
@@ -227,7 +238,10 @@ class WidgetFileProcessor {
       }
     });
 
-    var parameters = processParameterLines(parameterLines);
+    var parameters = processParameterLines(
+      parameterLines,
+      intialIsOptional: initialIsOptional,
+    );
 
     var rawWidgetDj = RawWidgetDj(
       parameters: parameters,
@@ -238,26 +252,33 @@ class WidgetFileProcessor {
     return rawWidgetDj;
   }
 
-  List<Parameter> processParameterLines(List<String> parameterLines) {
+  List<Parameter> processParameterLines(
+    List<String> parameterLines, {
+    bool intialIsOptional = false,
+  }) {
+    var debuggingLines = fileDebugLvl > 0;
     var parameters = <Parameter>[];
 
-    var isOptional = false;
+    if (debuggingLines) {
+      print('intialIsOptional: $intialIsOptional');
+    }
+
+    var isOptional = intialIsOptional;
     var skipLines = 0;
     parameterLines.forEach((parameterLine) {
       // Use this when debugging parsing of a particular line.
-      var debuggingThisLine = fileDebugLvl > 0;
-      // if ((skipLines == 0) && !parameterLine.contains('(')) {
+      // if ((skipLines == 0)) {
       //   print('');
       //   print('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>');
       //   print('$currentConstructorName @ $currentFileName');
       //   print('$parameterLine');
-      //   debuggingThisLine = true;
+      //   debuggingLines = true;
       // }
 
       // var line = parameterLine.split('    ').last;
       var line = WhiteSpaceRemover(line: parameterLine).removeFromStart();
 
-      if (debuggingThisLine) {
+      if (debuggingLines) {
         print('1. $line');
       }
 
@@ -287,11 +308,11 @@ class WidgetFileProcessor {
             line = line.substring(0, line.length - 1);
           }
 
-          if (debuggingThisLine) {
-            print('1.5. $line [$isOptional]');
+          if (debuggingLines) {
+            print('1.5. $line [$_isOptional]');
           }
 
-          if (debuggingThisLine) {
+          if (debuggingLines) {
             print('2. $line');
           }
 
@@ -304,7 +325,7 @@ class WidgetFileProcessor {
             line = WhiteSpaceRemover(line: lineParts.first).removeFromEnd();
           }
 
-          if (debuggingThisLine) {
+          if (debuggingLines) {
             print('3. $line [$defaultValue]');
           }
 
@@ -312,7 +333,7 @@ class WidgetFileProcessor {
           var isRequired = line.startsWith('required');
           line = line.split('required ').last;
 
-          if (debuggingThisLine) {
+          if (debuggingLines) {
             print('4. $line [$isRequired]');
           }
 
@@ -320,7 +341,7 @@ class WidgetFileProcessor {
           var isFinal = line.contains('this.');
           line = line.replaceAll('this.', '');
 
-          if (debuggingThisLine) {
+          if (debuggingLines) {
             print('5. $line [$isFinal]');
           }
 
@@ -333,7 +354,7 @@ class WidgetFileProcessor {
             isRequired = false;
             isFinal = true;
 
-            if (debuggingThisLine) {
+            if (debuggingLines) {
               print('5.5. $lineBefore => $line');
             }
           }
@@ -355,7 +376,7 @@ class WidgetFileProcessor {
           //   line = lineParts.last;
           // }
 
-          if (debuggingThisLine) {
+          if (debuggingLines) {
             print('6. [$type] [$name]');
           }
 
