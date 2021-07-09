@@ -1,6 +1,6 @@
 name: dj_fc
 description: Auto-Generate corresponding Dj Widgets for Flutter Widgets given Flutter SDK location.
-version: 0.0.1
+version: 0.0.2
 homepage: https://www.ark4579.com
 repository: https://github.com/ARK4579/dj_fc
 issue_tracker: https://github.com/ARK4579/dj_fc/issues
