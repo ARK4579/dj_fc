@@ -108,21 +108,21 @@ class RawWidgetDj {
   }
 
   CodePartDj getToCode(List<FieldDj> fields) {
-    var bodyCodeLines = <String>["codeLines.add('$name(');"];
+    var bodyCodeLines = <String>["codeLines.add('$name( '); "];
     fields.forEach((field) {
       if (field.name != 'baseWidgetDjType' &&
           !(field.name?.startsWith('_') ?? false)) {
-        bodyCodeLines.add('if(${field.name}!=null) {');
+        bodyCodeLines.add('if(${field.name} != null) { ');
         var fieldValue = '\${dynamicParameterParser(${field.name})}';
         if (field.isOptional ?? false) {
-          bodyCodeLines.add("codeLines.add('${field.name}:$fieldValue,');");
+          bodyCodeLines.add("codeLines.add('${field.name} : $fieldValue, '); ");
         } else {
-          bodyCodeLines.add("codeLines.add('$fieldValue,');");
+          bodyCodeLines.add("codeLines.add('$fieldValue, '); ");
         }
         bodyCodeLines.add('}');
       }
     });
-    bodyCodeLines.add("codeLines.add(')');");
+    bodyCodeLines.add("codeLines.add(') '); ");
 
     List<CodePartDj>? bodyCodeParts = [
       VariableDeclarationDj(
