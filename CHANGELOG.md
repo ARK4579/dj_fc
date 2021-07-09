@@ -1,3 +1,8 @@
+## 0.0.2
+
+- Minor updates.
+- dj version updated to v0.0.6
+
 ## 0.0.1
 
 - Flutter's SDK parsing code added.
